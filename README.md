@@ -178,10 +178,23 @@ node dist/cli.cjs run file.http
 
 Run interactively with a mounted `.http` file:
 
+**via ghcr.io**
+
 ```sh
+# via ghcr.io
 docker run -it \
   -v ${PWD}/test.http:/app/test.http \
   ghcr.io/mistweaverco/kulala-cli:latest \
+  run test.http \
+ --name
+```
+
+**via Docker Hub**
+
+```sh
+docker run -it \
+  -v ${PWD}/test.http:/app/test.http \
+  mistweaverco/kulala-cli:latest \
   run test.http \
  --name
 ```
@@ -191,10 +204,22 @@ docker run -it \
 Run one request by block name (`###` name) with
 a mounted `.http` file and pseudo-TTY:
 
+**via ghcr.io**
+
 ```sh
 docker run -t \
   -v ${PWD}/test.http:/app/test.http \
   ghcr.io/mistweaverco/kulala-cli:latest \
+  run test.http \
+ --name "My Request Name"
+```
+
+**via Docker Hub**
+
+```sh
+docker run -t \
+  -v ${PWD}/test.http:/app/test.http \
+  mistweaverco/kulala-cli:latest \
   run test.http \
  --name "My Request Name"
 ```
@@ -204,6 +229,8 @@ docker run -t \
 Run all requests in a directory without
 a pseudo-TTY (for example, in CI):
 
+**via ghcr.io**
+
 ```sh
 docker run \
   -v ${PWD}/http-files-dir:/app/http-files-dir \
@@ -211,9 +238,18 @@ docker run \
   run ./http-files-dir
 ```
 
-### Build docker and push to GitHub Container Registry:
+**via Docker Hub**
 
-#### Build and push to GitHub Container Registry:
+```sh
+docker run \
+  -v ${PWD}/http-files-dir:/app/http-files-dir \
+  mistweaverco/kulala-cli:latest \
+  run ./http-files-dir
+```
+
+### Build Docker and Push to Container Registry:
+
+**to ghcr.io**
 
 ```sh
 docker buildx build --push \
@@ -221,7 +257,7 @@ docker buildx build --push \
   -f Dockerfile .
 ```
 
-#### Build and push to Docker Hub:
+**to Docker Hub**
 
 ```sh
 docker buildx build --push \
