@@ -357,10 +357,10 @@ export function itemTitle(item: KulalaResponseItem): string {
     return `Prompt: ${item.promptType}`;
   }
   if (isSkippedResponse(item)) {
-    return item.blockName ? `Skipped — ${item.blockName}` : 'Skipped';
+    return item.blockName ? `Skipped - ${item.blockName}` : 'Skipped';
   }
   if (isWebSocketResponse(item)) {
-    return `WebSocket — ${item.url}`;
+    return `WebSocket - ${item.url}`;
   }
   if (isErrorResponse(item)) {
     const method = item.request?.method ?? 'REQUEST';

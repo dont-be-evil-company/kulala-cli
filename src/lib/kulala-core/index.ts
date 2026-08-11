@@ -186,9 +186,64 @@ export async function curl(
   return parseInvokeResponse(job);
 }
 
+export async function convertImage(
+  options: { content: string; mediaType?: string; target: 'png' },
+  invokeOptions: InvokeOptions = {},
+): Promise<{
+  content: string;
+  mediaType: string;
+  byteLength: number;
+  convertedFrom?: 'jpeg';
+} | null> {
+  await executablePath();
+
+  const job = await invokeRaw(
+    {
+      action: 'convert_image',
+      content: options.content,
+      mediaType: options.mediaType,
+      target: options.target,
+    },
+    invokeOptions,
+  );
+
+  if (job.status !== 0) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(job.stdout.trim()) as {
+      type?: string;
+      success?: boolean;
+      content?: string;
+      mediaType?: string;
+      byteLength?: number;
+      convertedFrom?: 'jpeg';
+    };
+    if (
+      parsed.type !== 'convert_image' ||
+      parsed.success !== true ||
+      typeof parsed.content !== 'string' ||
+      typeof parsed.mediaType !== 'string' ||
+      typeof parsed.byteLength !== 'number'
+    ) {
+      return null;
+    }
+    return {
+      content: parsed.content,
+      mediaType: parsed.mediaType,
+      byteLength: parsed.byteLength,
+      ...(parsed.convertedFrom ? { convertedFrom: parsed.convertedFrom } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export const kulalaCore = {
   runHttp,
   continueHttp,
   environments,
   curl,
+  convertImage,
 };

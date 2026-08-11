@@ -88,16 +88,16 @@ function itemsToStream(items: KulalaResponseItem[], quiet: boolean): KulalaRespo
   return items.filter((item) => !isResponseSuccessful(item));
 }
 
-function streamResponseItems(
+async function streamResponseItems(
   filepath: string,
   items: KulalaResponseItem[],
   ctx: OutputContext,
-): void {
+): Promise<void> {
   if (!shouldStreamOutput(ctx)) {
     return;
   }
   const toPrint = itemsToStream(items, ctx.quiet ?? false);
-  printResponseItems(filepath, toPrint);
+  await printResponseItems(filepath, toPrint);
 }
 
 function continueSucceeded(response: KulalaResponseWrapper): boolean {
@@ -173,7 +173,7 @@ async function runFileWithPromptRetry(
 
   if (!promptItem) {
     const final = mergeRunResponses(accumulated, response);
-    streamResponseItems(relativePath, newItemsSinceAccumulated(accumulated, final), output);
+    await streamResponseItems(relativePath, newItemsSinceAccumulated(accumulated, final), output);
     return {
       filepath: relativePath,
       response: final,
@@ -189,7 +189,7 @@ async function runFileWithPromptRetry(
 
   const completedBefore = completedItemsBeforePrompt(response);
   const newAccumulated = [...accumulated, ...completedBefore];
-  streamResponseItems(relativePath, completedBefore, output);
+  await streamResponseItems(relativePath, completedBefore, output);
 
   const inputs = await collectPromptInputs(promptItem);
   if (!inputs || !promptItem.promptId) {
@@ -287,14 +287,14 @@ export async function run(inputPath: string, options: RunCommandOptions): Promis
 
   if (options.tests) {
     // Tests mode handles its own "quiet" filtering because failures include test failures.
-    printTests(results, { quiet: options.quiet ?? false });
+    await printTests(results, { quiet: options.quiet ?? false });
   } else if (!options.quiet || outputResults.length > 0) {
     if (options.json) {
       printJson(results);
     } else if (options.report) {
       printReport(pendingOutput);
     } else if (pendingOutput.length > 0) {
-      printHumanReadable(outputResults);
+      await printHumanReadable(outputResults);
     }
   }
 

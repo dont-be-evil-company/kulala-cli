@@ -71,7 +71,7 @@ export async function curl(argv: string[], options: CurlCommandOptions = {}): Pr
   if (mergedOptions.json) {
     printJson([result]);
   } else {
-    printHumanReadable([result]);
+    await printHumanReadable([result]);
   }
 
   if (countResults(response).failed > 0) {

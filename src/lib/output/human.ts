@@ -53,11 +53,11 @@ function formatHeaders(headers: Record<string, string>): string {
     .join('\n');
 }
 
-function formatBody(body: KulalaResponseBody | undefined): string {
+async function formatBody(body: KulalaResponseBody | undefined): Promise<string> {
   if (isBinaryBody(body)) {
     const mediaType = body.mediaType ?? 'application/octet-stream';
     if (isImageBody(body)) {
-      const rendered = renderImageInline(body);
+      const rendered = await renderImageInline(body);
       if (rendered) {
         const parts: string[] = [];
         if (rendered.convertedFrom === 'jpeg') {
@@ -191,20 +191,20 @@ function formatRequestHeader(
   return lines.join('\n');
 }
 
-function appendHttpResponseDetails(
+async function appendHttpResponseDetails(
   parts: string[],
   item: {
     headers?: Record<string, string>;
     body?: KulalaResponseBody;
     filteredBody?: KulalaResponseBody;
   },
-): void {
+): Promise<void> {
   if (item.headers && Object.keys(item.headers).length > 0) {
     parts.push('');
     parts.push(formatSection('Headers', formatHeaders(item.headers)));
   }
 
-  const bodySection = formatBody(item.filteredBody ?? item.body);
+  const bodySection = await formatBody(item.filteredBody ?? item.body);
   if (bodySection) {
     parts.push('');
     parts.push(formatSection('Response body', bodySection));
@@ -230,7 +230,7 @@ function appendScriptSections(
   }
 }
 
-function formatItem(item: KulalaResponseItem, requestFile?: string): string {
+async function formatItem(item: KulalaResponseItem, requestFile?: string): Promise<string> {
   const header = requestFile ? `${formatRunHeader(requestFile, itemDisplayName(item))}\n` : '';
 
   if (isPromptResponse(item)) {
@@ -273,7 +273,7 @@ function formatItem(item: KulalaResponseItem, requestFile?: string): string {
       parts.push(pc.red(`Error: ${item.error}`));
     }
 
-    appendHttpResponseDetails(parts, item);
+    await appendHttpResponseDetails(parts, item);
     appendScriptSections(parts, item.scriptConsole, requestFile);
     return parts.join('\n');
   }
@@ -292,7 +292,7 @@ function formatItem(item: KulalaResponseItem, requestFile?: string): string {
         ),
     ];
 
-    appendHttpResponseDetails(parts, item);
+    await appendHttpResponseDetails(parts, item);
     appendScriptSections(parts, item.scriptConsole, requestFile);
     return parts.join('\n');
   }
@@ -300,20 +300,29 @@ function formatItem(item: KulalaResponseItem, requestFile?: string): string {
   return header + pc.dim('Unknown response type');
 }
 
-function formatWrapper(wrapper: KulalaResponseWrapper, requestFile?: string): string {
+async function formatWrapper(
+  wrapper: KulalaResponseWrapper,
+  requestFile?: string,
+): Promise<string> {
   const items = wrapper.type === 'error' ? wrapper.data : wrapper.data;
-  return items.map((entry) => formatItem(entry, requestFile)).join('\n\n');
+  const formatted = await Promise.all(items.map((entry) => formatItem(entry, requestFile)));
+  return formatted.join('\n\n');
 }
 
-export function printResponseItems(filepath: string, items: KulalaResponseItem[]): void {
+export async function printResponseItems(
+  filepath: string,
+  items: KulalaResponseItem[],
+): Promise<void> {
   if (items.length === 0) {
     return;
   }
-  console.log(formatWrapper({ type: 'responses', data: items }, filepath));
+  console.log(await formatWrapper({ type: 'responses', data: items }, filepath));
 }
 
-export function printHumanReadable(results: RunFileResult[]): void {
-  const blocks = results.map((result) => formatWrapper(result.response, result.filepath));
+export async function printHumanReadable(results: RunFileResult[]): Promise<void> {
+  const blocks = await Promise.all(
+    results.map((result) => formatWrapper(result.response, result.filepath)),
+  );
   console.log(blocks.join('\n\n'));
 }
 

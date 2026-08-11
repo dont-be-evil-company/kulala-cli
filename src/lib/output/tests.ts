@@ -67,7 +67,10 @@ function formatTestsOnly(item: KulalaResponseItem): string {
   return lines.join('\n').trim();
 }
 
-export function printTests(results: RunFileResult[], options: { quiet: boolean }): void {
+export async function printTests(
+  results: RunFileResult[],
+  options: { quiet: boolean },
+): Promise<void> {
   const blocks: string[] = [];
 
   for (const result of results) {
@@ -83,7 +86,7 @@ export function printTests(results: RunFileResult[], options: { quiet: boolean }
 
       // Failures: show normal human readable output, but always include file header.
       if (requestFailed || testsFailed) {
-        printHumanReadable([
+        await printHumanReadable([
           { filepath: result.filepath, response: { type: 'responses', data: [item] } },
         ]);
         continue;

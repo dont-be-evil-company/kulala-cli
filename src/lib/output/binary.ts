@@ -1,6 +1,5 @@
-import jpeg from 'jpeg-js';
-import { PNG } from 'pngjs';
 import type { KulalaResponseBody } from '../kulala-core/types';
+import { kulalaCore } from '../kulala-core';
 
 export type TerminalImageProtocol = 'kitty' | 'iterm2' | 'wezterm' | 'ghostty';
 
@@ -85,27 +84,8 @@ function isPngImage(body: BinaryImageBody): boolean {
   return body.content.startsWith('iVBORw0KGgo');
 }
 
-function isJpegImage(body: BinaryImageBody): boolean {
-  const mediaType = body.mediaType?.toLowerCase() ?? '';
-  if (mediaType === 'image/jpeg' || mediaType === 'image/jpg') {
-    return true;
-  }
-  return body.content.startsWith('/9j/');
-}
-
 function usesKittyGraphicsProtocol(protocol: TerminalImageProtocol): boolean {
   return protocol === 'kitty' || protocol === 'ghostty';
-}
-
-function convertJpegBase64ToPngBase64(base64: string): string | null {
-  try {
-    const decoded = jpeg.decode(Buffer.from(base64, 'base64'));
-    const png = new PNG({ width: decoded.width, height: decoded.height });
-    png.data = decoded.data;
-    return PNG.sync.write(png).toString('base64');
-  } catch {
-    return null;
-  }
 }
 
 export function formatByteSize(bytes: number): string {
@@ -145,7 +125,9 @@ function iterm2ImageEscape(base64: string, byteLength: number): string {
   return `\u001b]1337;File=inline=1;size=${byteLength};width=auto;height=auto;preserveAspectRatio=1:${base64}\u0007`;
 }
 
-export function renderImageInline(body: BinaryImageBody): RenderedInlineImage | null {
+export async function renderImageInline(
+  body: BinaryImageBody,
+): Promise<RenderedInlineImage | null> {
   const protocol = detectTerminalImageProtocol();
   if (!protocol) return null;
   if (body.encoding !== 'base64') return null;
@@ -154,13 +136,17 @@ export function renderImageInline(body: BinaryImageBody): RenderedInlineImage | 
     let base64 = body.content;
     let convertedFrom: 'jpeg' | undefined;
 
-    if (!isPngImage(body) && isJpegImage(body)) {
-      const pngBase64 = convertJpegBase64ToPngBase64(body.content);
-      if (!pngBase64) {
+    if (!isPngImage(body)) {
+      const converted = await kulalaCore.convertImage({
+        content: body.content,
+        mediaType: body.mediaType,
+        target: 'png',
+      });
+      if (!converted) {
         return null;
       }
-      base64 = pngBase64;
-      convertedFrom = 'jpeg';
+      base64 = converted.content;
+      convertedFrom = converted.convertedFrom;
     }
 
     return { content: kittyImageEscape(base64), convertedFrom };

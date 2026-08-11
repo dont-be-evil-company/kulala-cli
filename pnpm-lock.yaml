@@ -30,9 +30,6 @@ importers:
       '@types/node':
         specifier: 25.9.1
         version: 25.9.1
-      '@types/pngjs':
-        specifier: 6.0.5
-        version: 6.0.5
       chalk:
         specifier: 5.6.2
         version: 5.6.2
@@ -48,15 +45,9 @@ importers:
       globals:
         specifier: 17.6.0
         version: 17.6.0
-      jpeg-js:
-        specifier: 0.4.4
-        version: 0.4.4
       picocolors:
         specifier: 1.1.1
         version: 1.1.1
-      pngjs:
-        specifier: 7.0.0
-        version: 7.0.0
       prettier:
         specifier: 3.8.4
         version: 3.8.4
@@ -768,9 +759,6 @@ packages:
   '@types/node@25.9.1':
     resolution: {integrity: sha512-xfrlY7UD5rMJk3ZVJP8BNzS28J36YJg+xp+LPXV1TdWxr8uMH5A860QNxYDGQe/ylDSgjxE52Q9VnO7p75tJxg==}
 
-  '@types/pngjs@6.0.5':
-    resolution: {integrity: sha512-0k5eKfrA83JOZPppLtS2C7OUtyNAl2wKNxfyYl9Q5g9lPkgBl/9hNyAu6HuEH2J4XmIv2znEpkDd0SaZVxW6iQ==}
-
   '@voidzero-dev/vite-plus-core@0.1.24':
     resolution: {integrity: sha512-iXPGBABnQnrDMx89H6MOCGcTZp+QW+3rY4YMVKdE6ydchSvPk2O3MI2vgaRVfOtWJ2IjnxSnf1n2yjP67ZBRFQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1170,9 +1158,6 @@ packages:
 
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
-
-  jpeg-js@0.4.4:
-    resolution: {integrity: sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg==}
 
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
@@ -2012,10 +1997,6 @@ snapshots:
     dependencies:
       undici-types: 7.24.6
 
-  '@types/pngjs@6.0.5':
-    dependencies:
-      '@types/node': 25.9.1
-
   '@voidzero-dev/vite-plus-core@0.1.24(@types/node@25.9.1)(esbuild@0.28.1)(tsx@4.22.4)(typescript@5.9.3)':
     dependencies:
       '@oxc-project/runtime': 0.133.0
@@ -2342,8 +2323,6 @@ snapshots:
       is-extglob: 2.1.1
 
   isexe@2.0.0: {}
-
-  jpeg-js@0.4.4: {}
 
   json-buffer@3.0.1: {}
 
