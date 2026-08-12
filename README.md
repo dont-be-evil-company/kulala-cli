@@ -40,10 +40,10 @@ that supports the Jetbrains .http spec (with full scripting support).
 You can install kulala-cli globally using `npm`, `bun`, `yarn` or `pnpm`:
 
 ```sh
-npm install -g @mistweaverco/kulala-cli
-bun add -g @mistweaverco/kulala-cli
-yarn global add @mistweaverco/kulala-cli
-pnpm add -g @mistweaverco/kulala-cli
+npm install -g @dont-be-evil-company/kulala-cli
+bun add -g @dont-be-evil-company/kulala-cli
+yarn global add @dont-be-evil-company/kulala-cli
+pnpm add -g @dont-be-evil-company/kulala-cli
 ```
 
 You can also run it directly without installation using
@@ -51,14 +51,14 @@ You can also run it directly without installation using
 `npx`, `bunx`, `yarn dlx` or `pnpx`:
 
 ```sh
-npx @mistweaverco/kulala-cli run --tests file.http
-bunx @mistweaverco/kulala-cli run --tests file.http
-yarn dlx @mistweaverco/kulala-cli run --tests file.http
-pnpx @mistweaverco/kulala-cli run --tests file.http
+npx @dont-be-evil-company/kulala-cli run --tests file.http
+bunx @dont-be-evil-company/kulala-cli run --tests file.http
+yarn dlx @dont-be-evil-company/kulala-cli run --tests file.http
+pnpx @dont-be-evil-company/kulala-cli run --tests file.http
 ```
 
 On install, kulala-cli downloads a matching
-[kulala-core](https://github.com/mistweaverco/kulala-core)
+[kulala-core](https://github.com/dont-be-evil-company/kulala-core)
 binary automatically.
 
 If install scripts are disabled
@@ -184,7 +184,7 @@ Run interactively with a mounted `.http` file:
 # via ghcr.io
 docker run -it \
   -v ${PWD}/test.http:/app/test.http \
-  ghcr.io/mistweaverco/kulala-cli:latest \
+  ghcr.io/dont-be-evil-company/kulala-cli:latest \
   run test.http \
  --name
 ```
@@ -194,7 +194,7 @@ docker run -it \
 ```sh
 docker run -it \
   -v ${PWD}/test.http:/app/test.http \
-  mistweaverco/kulala-cli:latest \
+  dont-be-evil-company/kulala-cli:latest \
   run test.http \
  --name
 ```
@@ -209,7 +209,7 @@ a mounted `.http` file and pseudo-TTY:
 ```sh
 docker run -t \
   -v ${PWD}/test.http:/app/test.http \
-  ghcr.io/mistweaverco/kulala-cli:latest \
+  ghcr.io/dont-be-evil-company/kulala-cli:latest \
   run test.http \
  --name "My Request Name"
 ```
@@ -219,7 +219,7 @@ docker run -t \
 ```sh
 docker run -t \
   -v ${PWD}/test.http:/app/test.http \
-  mistweaverco/kulala-cli:latest \
+  dont-be-evil-company/kulala-cli:latest \
   run test.http \
  --name "My Request Name"
 ```
@@ -234,7 +234,7 @@ a pseudo-TTY (for example, in CI):
 ```sh
 docker run \
   -v ${PWD}/http-files-dir:/app/http-files-dir \
-  ghcr.io/mistweaverco/kulala-cli:latest \
+  ghcr.io/dont-be-evil-company/kulala-cli:latest \
   run ./http-files-dir
 ```
 
@@ -243,7 +243,7 @@ docker run \
 ```sh
 docker run \
   -v ${PWD}/http-files-dir:/app/http-files-dir \
-  mistweaverco/kulala-cli:latest \
+  dont-be-evil-company/kulala-cli:latest \
   run ./http-files-dir
 ```
 
@@ -253,7 +253,7 @@ docker run \
 
 ```sh
 docker buildx build --push \
-  -t ghcr.io/mistweaverco/kulala-cli:latest \
+  -t ghcr.io/dont-be-evil-company/kulala-cli:latest \
   -f Dockerfile .
 ```
 
@@ -261,27 +261,27 @@ docker buildx build --push \
 
 ```sh
 docker buildx build --push \
-  -t mistweaverco/kulala-cli:latest \
+  -t dont-be-evil-company/kulala-cli:latest \
   -f Dockerfile .
 ```
 
-[logo]: https://raw.githubusercontent.com/mistweaverco/kulala-cli/main/assets/logo.svg
-[badge-npm]: https://img.shields.io/npm/v/@mistweaverco/kulala-cli?style=for-the-badge
-[link-npm]: https://www.npmjs.com/package/@mistweaverco/kulala-cli
-[badge-discord]: https://mistweaverco.com/assets/badges/discord.svg
-[discord]: https://mistweaverco.com/discord
-[badge-made-with-love]: https://mistweaverco.com/assets/badges/made-with-love.svg
-[contributors]: https://github.com/mistweaverco/kulala-cli/graphs/contributors
-[kulala.nvim]: https://github.com/mistweaverco/kulala.nvim
-[kulala-fmt]: https://github.com/mistweaverco/kulala-fmt
-[kulala-desktop]: https://github.com/mistweaverco/kulala-desktop
-[kulala.vscode]: https://github.com/mistweaverco/kulala.vscode
-[kulala-core]: https://github.com/mistweaverco/kulala-core
-[kulala-github-action]: https://github.com/mistweaverco/kulala-github-action
+[logo]: https://raw.githubusercontent.com/dont-be-evil-company/kulala-cli/main/assets/logo.svg
+[badge-npm]: https://img.shields.io/npm/v/@dont-be-evil-company/kulala-cli?style=for-the-badge
+[link-npm]: https://www.npmjs.com/package/@dont-be-evil-company/kulala-cli
+[badge-discord]: https://the-dont-be-evil-company.com/assets/badges/discord.svg
+[discord]: https://the-dont-be-evil-company.com/discord
+[badge-made-with-love]: https://the-dont-be-evil-company.com/assets/badges/made-with-love.svg
+[contributors]: https://github.com/dont-be-evil-company/kulala-cli/graphs/contributors
+[kulala.nvim]: https://github.com/dont-be-evil-company/kulala.nvim
+[kulala-fmt]: https://github.com/dont-be-evil-company/kulala-fmt
+[kulala-desktop]: https://github.com/dont-be-evil-company/kulala-desktop
+[kulala.vscode]: https://github.com/dont-be-evil-company/kulala.vscode
+[kulala-core]: https://github.com/dont-be-evil-company/kulala-core
+[kulala-github-action]: https://github.com/dont-be-evil-company/kulala-github-action
 [demo-image]: https://github.com/user-attachments/assets/a7b3b01f-0115-44dc-94d2-8abd4db6fb60
-[badge-development-status]: https://mistweaverco.com/assets/badges/development-status.svg
-[development-status]: https://mistweaverco.com/roadmap?filter=kulala-cli
-[badge-ai-policy]: https://mistweaverco.com/assets/badges/ai-policy.svg
-[ai-policy]: https://mistweaverco.com/ai-policy
-[badge-our-manifesto]: https://mistweaverco.com/assets/badges/our-manifesto.svg
-[our-manifesto]: https://mistweaverco.com/manifesto
+[badge-development-status]: https://the-dont-be-evil-company.com/assets/badges/development-status.svg
+[development-status]: https://the-dont-be-evil-company.com/roadmap?filter=kulala-cli
+[badge-ai-policy]: https://the-dont-be-evil-company.com/assets/badges/ai-policy.svg
+[ai-policy]: https://the-dont-be-evil-company.com/ai-policy
+[badge-our-manifesto]: https://the-dont-be-evil-company.com/assets/badges/our-manifesto.svg
+[our-manifesto]: https://the-dont-be-evil-company.com/manifesto

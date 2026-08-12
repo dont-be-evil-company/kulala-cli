@@ -101,7 +101,12 @@ function formatItemSection(item: KulalaResponseItem, requestFile?: string): stri
     rows.push(['Name', escapeCell(item.blockName)]);
   }
 
-  if (isErrorResponse(item)) {
+  if (isWebSocketResponse(item)) {
+    rows.push(['URL', escapeCell(item.url)]);
+    if (item.error) {
+      rows.push(['Error', escapeCell(item.error)]);
+    }
+  } else if (isErrorResponse(item)) {
     rows.push(['Error', escapeCell(item.error)]);
     if (item.url) {
       rows.push(['URL', escapeCell(item.url)]);
@@ -111,8 +116,6 @@ function formatItemSection(item: KulalaResponseItem, requestFile?: string): stri
     }
   } else if (isPromptResponse(item)) {
     rows.push(['Message', escapeCell(item.message)]);
-  } else if (isWebSocketResponse(item)) {
-    rows.push(['URL', escapeCell(item.url)]);
   } else if (isSkippedResponse(item)) {
     rows.push(['Status', 'skipped']);
   } else if (isSuccessResponse(item)) {
@@ -125,6 +128,28 @@ function formatItemSection(item: KulalaResponseItem, requestFile?: string): stri
 
   parts.push(mdTable(rows));
   parts.push('');
+
+  if (isWebSocketResponse(item) && item.transcript?.length) {
+    const lines = item.transcript
+      .map((event) => {
+        if (event.type === 'sent') return `--> ${event.data ?? ''}`;
+        if (event.type === 'message') return `<-- ${event.data ?? ''}`;
+        if (event.type === 'waiting') {
+          return `Waiting for ${event.remaining ?? 0} server message(s)`;
+        }
+        if (event.type === 'script-done') return 'Script finished.';
+        if (event.type === 'error') return event.error ?? 'WebSocket error';
+        return undefined;
+      })
+      .filter((line): line is string => Boolean(line));
+    if (lines.length > 0) {
+      parts.push('#### WebSocket transcript\n');
+      parts.push('```');
+      parts.push(lines.join('\n'));
+      parts.push('```');
+      parts.push('');
+    }
+  }
 
   if ('body' in item && item.body) {
     const body = 'filteredBody' in item && item.filteredBody ? item.filteredBody : item.body;

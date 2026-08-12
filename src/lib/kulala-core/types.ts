@@ -102,11 +102,34 @@ export type KulalaSkippedResponse = {
   scriptConsole?: KulalaScriptConsoleLine[];
 };
 
+export type KulalaWebSocketMessage = {
+  waitForServer: number;
+  data: string;
+};
+
+export type KulalaWebSocketTranscriptEntry = {
+  type: string;
+  data?: string;
+  error?: string;
+  remaining?: number;
+  code?: number;
+};
+
 export type KulalaWebSocketPlanResponse = {
-  success: true;
+  success: boolean;
   protocol: 'websocket';
   url: string;
   initialMessage?: string;
+  messages?: KulalaWebSocketMessage[];
+  timeoutMs?: number;
+  error?: string;
+  transcript?: KulalaWebSocketTranscriptEntry[];
+  request?: {
+    method?: string;
+    url?: string;
+    headers?: Record<string, string>;
+    body?: string;
+  };
 };
 
 export type KulalaResponseItem =

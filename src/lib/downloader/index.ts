@@ -6,7 +6,7 @@ import { createSpinner } from '../spinner';
 import { KULALA_CORE_VERSION } from '../../versions/backend';
 
 const BINARY_NAME = 'kulala-core';
-const DOWNLOAD_URL = 'https://github.com/mistweaverco/kulala-core/releases/download/v%s/%s';
+const DOWNLOAD_URL = 'https://github.com/dont-be-evil-company/kulala-core/releases/download/v%s/%s';
 
 function platform(): string {
   const os =

@@ -26,6 +26,7 @@ import {
   type ParsedAssert,
   type ParsedTestGroup,
 } from './shared';
+import { formatWebSocketTranscriptLine, wasWebSocketLivePrinted } from './websocket';
 
 function statusColor(status: number): (text: string) => string {
   if (status >= 200 && status < 300) {
@@ -198,10 +199,22 @@ async function appendHttpResponseDetails(
     body?: KulalaResponseBody;
     filteredBody?: KulalaResponseBody;
   },
+  opts?: { omitRawBody?: boolean },
 ): Promise<void> {
   if (item.headers && Object.keys(item.headers).length > 0) {
     parts.push('');
     parts.push(formatSection('Headers', formatHeaders(item.headers)));
+  }
+
+  if (opts?.omitRawBody) {
+    if (item.filteredBody) {
+      const filtered = await formatBody(item.filteredBody);
+      if (filtered) {
+        parts.push('');
+        parts.push(formatSection('Filtered body', filtered));
+      }
+    }
+    return;
   }
 
   const bodySection = await formatBody(item.filteredBody ?? item.body);
@@ -230,7 +243,19 @@ function appendScriptSections(
   }
 }
 
-async function formatItem(item: KulalaResponseItem, requestFile?: string): Promise<string> {
+function streamedBlockKey(item: KulalaResponseItem): string {
+  if ('blockName' in item && typeof item.blockName === 'string' && item.blockName.trim()) {
+    return item.blockName.trim();
+  }
+  return '';
+}
+
+async function formatItem(
+  item: KulalaResponseItem,
+  requestFile?: string,
+  streamedBlocks?: Set<string>,
+): Promise<string> {
+  const omitRawBody = streamedBlocks?.has(streamedBlockKey(item)) ?? false;
   const header = requestFile ? `${formatRunHeader(requestFile, itemDisplayName(item))}\n` : '';
 
   if (isPromptResponse(item)) {
@@ -248,8 +273,17 @@ async function formatItem(item: KulalaResponseItem, requestFile?: string): Promi
   }
 
   if (isWebSocketResponse(item)) {
+    if (wasWebSocketLivePrinted(item)) return '';
     const parts = [header + pc.cyan(`WebSocket: ${item.url}`)];
-    if (item.initialMessage) {
+    if (item.error) {
+      parts.push(pc.red(`Error: ${item.error}`));
+    }
+    if (item.transcript?.length) {
+      for (const event of item.transcript) {
+        const line = formatWebSocketTranscriptLine(event);
+        if (line) parts.push(line);
+      }
+    } else if (item.initialMessage) {
       parts.push(pc.dim(`Initial message: ${item.initialMessage}`));
     }
     return parts.join('\n');
@@ -273,7 +307,7 @@ async function formatItem(item: KulalaResponseItem, requestFile?: string): Promi
       parts.push(pc.red(`Error: ${item.error}`));
     }
 
-    await appendHttpResponseDetails(parts, item);
+    await appendHttpResponseDetails(parts, item, { omitRawBody });
     appendScriptSections(parts, item.scriptConsole, requestFile);
     return parts.join('\n');
   }
@@ -292,7 +326,7 @@ async function formatItem(item: KulalaResponseItem, requestFile?: string): Promi
         ),
     ];
 
-    await appendHttpResponseDetails(parts, item);
+    await appendHttpResponseDetails(parts, item, { omitRawBody });
     appendScriptSections(parts, item.scriptConsole, requestFile);
     return parts.join('\n');
   }
@@ -303,20 +337,26 @@ async function formatItem(item: KulalaResponseItem, requestFile?: string): Promi
 async function formatWrapper(
   wrapper: KulalaResponseWrapper,
   requestFile?: string,
+  streamedBlocks?: Set<string>,
 ): Promise<string> {
   const items = wrapper.type === 'error' ? wrapper.data : wrapper.data;
-  const formatted = await Promise.all(items.map((entry) => formatItem(entry, requestFile)));
+  const formatted = (
+    await Promise.all(items.map((entry) => formatItem(entry, requestFile, streamedBlocks)))
+  ).filter((block) => block.trim() !== '');
   return formatted.join('\n\n');
 }
 
 export async function printResponseItems(
   filepath: string,
   items: KulalaResponseItem[],
+  streamedBlocks?: Set<string>,
 ): Promise<void> {
   if (items.length === 0) {
     return;
   }
-  console.log(await formatWrapper({ type: 'responses', data: items }, filepath));
+  console.log(
+    await formatWrapper({ type: 'responses', data: items }, filepath, streamedBlocks),
+  );
 }
 
 export async function printHumanReadable(results: RunFileResult[]): Promise<void> {

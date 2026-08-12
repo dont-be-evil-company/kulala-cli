@@ -11,11 +11,9 @@ import type {
 import {
   countResults,
   filterFailedResults,
-  isResponseSuccessful,
   printHumanReadable,
   printJson,
   printReport,
-  printResponseItems,
   printTests,
 } from '../output';
 import { setColorEnabled } from '../output/highlight';
@@ -24,6 +22,7 @@ import { collectPromptInputs } from '../prompt';
 import { isInteractiveTerminal, withSpinner } from '../spinner';
 import { buildRunLimit, resolveSingleHttpFile } from './limit';
 import type { RunLimit } from '../kulala-core/types';
+import { presentResponseItems } from '../websocket/execute';
 
 const MAX_PROMPT_DEPTH = 7;
 
@@ -81,23 +80,19 @@ function shouldStreamOutput(ctx: OutputContext): boolean {
   return !ctx.json && !ctx.tests;
 }
 
-function itemsToStream(items: KulalaResponseItem[], quiet: boolean): KulalaResponseItem[] {
-  if (!quiet) {
-    return items;
-  }
-  return items.filter((item) => !isResponseSuccessful(item));
-}
-
 async function streamResponseItems(
   filepath: string,
   items: KulalaResponseItem[],
   ctx: OutputContext,
+  halt: boolean,
+  streamedBlocks?: Set<string>,
 ): Promise<void> {
-  if (!shouldStreamOutput(ctx)) {
-    return;
-  }
-  const toPrint = itemsToStream(items, ctx.quiet ?? false);
-  await printResponseItems(filepath, toPrint);
+  await presentResponseItems(filepath, items, {
+    print: shouldStreamOutput(ctx),
+    quiet: ctx.quiet ?? false,
+    halt,
+    streamedBlocks,
+  });
 }
 
 function continueSucceeded(response: KulalaResponseWrapper): boolean {
@@ -164,16 +159,48 @@ async function runFileWithPromptRetry(
     haltOnError: halt,
   };
 
-  const response = isInteractiveTerminal()
-    ? await withSpinner(`Running requests in file ${relativePath}`, () =>
-        kulalaCore.runHttp(runOptions, { cwd }),
-      )
-    : await kulalaCore.runHttp(runOptions, { cwd });
+  const streamedBlocks = new Set<string>();
+  const liveBody = shouldStreamOutput(output) && !output.quiet;
+  const keepAlive = content.includes('@kulala-keep-alive-stream');
+  const execute = () =>
+    kulalaCore.runHttp(runOptions, {
+      cwd,
+      onHttpStream: liveBody
+        ? (event) => {
+            if (event.event === 'headers') {
+              streamedBlocks.add(event.blockName?.trim() || '');
+              const status = event.status ?? '';
+              process.stdout.write(`HTTP ${status}${event.url ? ` ${event.url}` : ''}\n`);
+              return;
+            }
+            if (event.event === 'chunk' && event.data) {
+              process.stdout.write(event.data);
+              return;
+            }
+            if (event.event === 'error' && event.error) {
+              process.stderr.write(`${event.error}\n`);
+            }
+          }
+        : undefined,
+    });
+  const response =
+    keepAlive || !isInteractiveTerminal()
+      ? await execute()
+      : await withSpinner(`Running requests in file ${relativePath}`, execute);
   const promptItem = response.type === 'responses' ? findFirstPromptItem(response) : undefined;
 
   if (!promptItem) {
     const final = mergeRunResponses(accumulated, response);
-    await streamResponseItems(relativePath, newItemsSinceAccumulated(accumulated, final), output);
+    if (liveBody && streamedBlocks.size > 0) {
+      process.stdout.write('\n');
+    }
+    await streamResponseItems(
+      relativePath,
+      newItemsSinceAccumulated(accumulated, final),
+      output,
+      halt,
+      streamedBlocks,
+    );
     return {
       filepath: relativePath,
       response: final,
@@ -184,12 +211,26 @@ async function runFileWithPromptRetry(
   if (depth >= MAX_PROMPT_DEPTH) {
     console.error(chalk.red('Kulala: exceeded prompt / retry limit.'));
     const final = mergeRunResponses(accumulated, response);
-    return { filepath: relativePath, response: final, outputStreamed: shouldStreamOutput(output) };
+    await streamResponseItems(
+      relativePath,
+      newItemsSinceAccumulated(accumulated, final),
+      output,
+      halt,
+      streamedBlocks,
+    );
+    return {
+      filepath: relativePath,
+      response: final,
+      outputStreamed: shouldStreamOutput(output),
+    };
   }
 
   const completedBefore = completedItemsBeforePrompt(response);
   const newAccumulated = [...accumulated, ...completedBefore];
-  await streamResponseItems(relativePath, completedBefore, output);
+  if (liveBody && streamedBlocks.size > 0) {
+    process.stdout.write('\n');
+  }
+  await streamResponseItems(relativePath, completedBefore, output, halt, streamedBlocks);
 
   const inputs = await collectPromptInputs(promptItem);
   if (!inputs || !promptItem.promptId) {

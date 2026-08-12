@@ -46,7 +46,7 @@ here are a few things we expect from you (and that you should expect from others
 ## How to contribute
 
 If you'd like to contribute,
-start by searching through the [pull requests](https://github.com/mistweaverco/kulala-cli/pulls) to
+start by searching through the [pull requests](https://github.com/dont-be-evil-company/kulala-cli/pulls) to
 see whether someone else has raised a similar idea or question.
 
 If you don't see your idea listed, and you think it fits into the goals of this guide, open a pull request.
@@ -74,8 +74,8 @@ so you don't need to worry about them.
 
 Discussions about the Kulala take place on:
 
-- This repository's [Issues](https://github.com/mistweaverco/kulala-cli/issues) and
-  [Pull Requests](https://github.com/mistweaverco/kulala-cli/pulls) sections
+- This repository's [Issues](https://github.com/dont-be-evil-company/kulala-cli/issues) and
+  [Pull Requests](https://github.com/dont-be-evil-company/kulala-cli/pulls) sections
 - The [Kulala Discord server](https://discord.gg/QyVQmfY4Rt)
 
 Anybody is welcome to join these conversations.

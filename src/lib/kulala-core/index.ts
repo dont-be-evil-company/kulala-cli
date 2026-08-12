@@ -1,12 +1,44 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { downloader } from '../downloader';
 import { isPromptResponse } from '../output/shared';
 import type { KulalaEnvironmentCatalog, KulalaResponseWrapper, RunOptions } from './types';
 
 export type { KulalaResponseWrapper, RunFileResult, RunOptions } from './types';
 
+export type HttpStreamEvent = {
+  type: 'http-stream';
+  event: 'headers' | 'chunk' | 'error';
+  status?: number;
+  httpVersion?: string;
+  headers?: Record<string, string>;
+  url?: string;
+  data?: string;
+  error?: string;
+  blockName?: string;
+};
+
+export function parseHttpStreamLine(line: string): HttpStreamEvent | undefined {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('{')) {
+    return undefined;
+  }
+  try {
+    const value = JSON.parse(trimmed) as HttpStreamEvent;
+    if (value && value.type === 'http-stream' && typeof value.event === 'string') {
+      return value;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
 export type InvokeOptions = {
   cwd?: string;
+  onHttpStream?: (event: HttpStreamEvent) => void;
 };
 
 type InvokeResult = {
@@ -45,11 +77,26 @@ function invokeRaw(
 
     let stdout = '';
     let stderr = '';
+    let pending = '';
+
+    const takeLine = (line: string): void => {
+      const event = parseHttpStreamLine(line);
+      if (event) {
+        options.onHttpStream?.(event);
+        return;
+      }
+      stdout += `${line}\n`;
+    };
 
     child.stdout.setEncoding('utf-8');
     child.stderr.setEncoding('utf-8');
     child.stdout.on('data', (chunk: string) => {
-      stdout += chunk;
+      pending += chunk;
+      const lines = pending.split('\n');
+      pending = lines.pop() ?? '';
+      for (const line of lines) {
+        takeLine(line);
+      }
     });
     child.stderr.on('data', (chunk: string) => {
       stderr += chunk;
@@ -57,6 +104,14 @@ function invokeRaw(
 
     child.on('error', reject);
     child.on('close', (status) => {
+      if (pending) {
+        const event = parseHttpStreamLine(pending);
+        if (event) {
+          options.onHttpStream?.(event);
+        } else {
+          stdout += pending;
+        }
+      }
       resolve({ stdout, stderr, status });
     });
 
@@ -99,6 +154,86 @@ function parseInvokeResponse(job: InvokeResult): KulalaResponseWrapper {
   }
 
   return wrapper;
+}
+
+export type WebSocketSessionEvent = {
+  type: string;
+  data?: string;
+  error?: string;
+  remaining?: number;
+  code?: number;
+};
+
+export type WebSocketSessionHandle = {
+  close(): void;
+  kill(): void;
+  readonly exited: Promise<number | null>;
+};
+
+export async function startWebSocketSession(
+  connect: Record<string, unknown>,
+  onEvent: (event: WebSocketSessionEvent) => void,
+  cwd?: string,
+): Promise<WebSocketSessionHandle> {
+  const exe = await executablePath();
+  const tmp = path.join(
+    os.tmpdir(),
+    `kulala-ws-${Date.now()}-${Math.random().toString(36).slice(2)}.json`,
+  );
+  fs.writeFileSync(tmp, JSON.stringify(connect), 'utf8');
+
+  const child = spawn(exe, ['--websocket', '-i', tmp], {
+    cwd,
+    env: process.env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+
+  let stdoutBuf = '';
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', (chunk: string) => {
+    stdoutBuf += chunk;
+    let nl: number;
+    while ((nl = stdoutBuf.indexOf('\n')) >= 0) {
+      const line = stdoutBuf.slice(0, nl).trim();
+      stdoutBuf = stdoutBuf.slice(nl + 1);
+      if (!line) continue;
+      try {
+        onEvent(JSON.parse(line) as WebSocketSessionEvent);
+      } catch {
+        /* ignore malformed lines */
+      }
+    }
+  });
+  child.stdin.on('error', () => {
+    /* Ignore EPIPE when the child exits early. */
+  });
+
+  const exited = new Promise<number | null>((resolve) => {
+    child.on('close', (code) => {
+      try {
+        fs.unlinkSync(tmp);
+      } catch {
+        /* ignore */
+      }
+      resolve(code);
+    });
+  });
+
+  return {
+    exited,
+    close() {
+      if (child.stdin.destroyed || !child.stdin.writable) return;
+      try {
+        child.stdin.write(`${JSON.stringify({ op: 'close' })}\n`);
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code !== 'EPIPE') throw err;
+      }
+    },
+    kill() {
+      child.kill('SIGTERM');
+    },
+  };
 }
 
 export async function runHttp(
@@ -246,4 +381,5 @@ export const kulalaCore = {
   environments,
   curl,
   convertImage,
+  startWebSocketSession,
 };

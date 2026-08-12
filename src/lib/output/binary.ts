@@ -55,7 +55,7 @@ export function detectTerminalImageProtocol(): TerminalImageProtocol | null {
   if (isWezTerm()) {
     return 'wezterm';
   }
-  // iTerm2 (macOS) – common env signals.
+  // iTerm2 (macOS) - common env signals.
   if (process.env.TERM_PROGRAM === 'iTerm.app' || process.env.ITERM_SESSION_ID) {
     return 'iterm2';
   }
