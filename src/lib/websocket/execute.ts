@@ -7,10 +7,7 @@ import type {
 } from '../kulala-core/types';
 import { isResponseSuccessful, printResponseItems } from '../output/human';
 import { formatRunHeader, isWebSocketResponse } from '../output/shared';
-import {
-  formatWebSocketTranscriptLine,
-  markWebSocketLivePrinted,
-} from '../output/websocket';
+import { formatWebSocketTranscriptLine, markWebSocketLivePrinted } from '../output/websocket';
 import pc from 'picocolors';
 
 /**
@@ -61,9 +58,7 @@ async function runWebSocketPlan(
   const transcript: KulalaWebSocketTranscriptEntry[] = [];
 
   if (options.live) {
-    const header = options.filepath
-      ? `${formatRunHeader(options.filepath, item.url)}\n`
-      : '';
+    const header = options.filepath ? `${formatRunHeader(options.filepath, item.url)}\n` : '';
     process.stdout.write(`${header}${pc.cyan(`WebSocket: ${item.url}`)}\n`);
     markWebSocketLivePrinted(item);
   }
@@ -72,8 +67,7 @@ async function runWebSocketPlan(
   let ok = false;
   let error: string | undefined;
 
-  let session: Awaited<ReturnType<typeof kulalaCore.startWebSocketSession>> | undefined;
-  session = await kulalaCore.startWebSocketSession(
+  const session = await kulalaCore.startWebSocketSession(
     {
       url: item.url,
       headers: item.request?.headers,

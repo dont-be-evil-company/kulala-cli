@@ -354,9 +354,7 @@ export async function printResponseItems(
   if (items.length === 0) {
     return;
   }
-  console.log(
-    await formatWrapper({ type: 'responses', data: items }, filepath, streamedBlocks),
-  );
+  console.log(await formatWrapper({ type: 'responses', data: items }, filepath, streamedBlocks));
 }
 
 export async function printHumanReadable(results: RunFileResult[]): Promise<void> {
