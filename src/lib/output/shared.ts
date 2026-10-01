@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { formatJsonSync } from '../kulala-core/format-json';
 import pc from 'picocolors';
 import type {
   KulalaRequestErrorResponse,
@@ -51,7 +52,7 @@ export function responseBodyText(body: KulalaResponseBody | undefined): string {
     return '';
   }
   if (body.type === 'json') {
-    return body.formatted ?? JSON.stringify(body.content, null, 2);
+    return body.formatted ?? formatJsonSync(body.content) ?? JSON.stringify(body.content);
   }
   if (body.type === 'binary') {
     return '';

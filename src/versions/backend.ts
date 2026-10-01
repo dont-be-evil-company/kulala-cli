@@ -1,1 +1,1 @@
-export const KULALA_CORE_VERSION = '0.37.0';
+export const KULALA_CORE_VERSION = '1.3.1';

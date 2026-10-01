@@ -1,4 +1,5 @@
 import pc from 'picocolors';
+import { formatJsonSync } from '../kulala-core/format-json';
 import type {
   KulalaResponseBody,
   KulalaResponseItem,
@@ -366,7 +367,7 @@ export async function printHumanReadable(results: RunFileResult[]): Promise<void
 
 export function printJson(results: RunFileResult[]): void {
   const payload = results.length === 1 ? results[0].response : results;
-  console.log(JSON.stringify(payload, null, 2));
+  console.log(formatJsonSync(payload) ?? JSON.stringify(payload));
 }
 
 export function isResponseSuccessful(item: KulalaResponseItem): boolean {

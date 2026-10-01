@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { downloader } from '../downloader';
+import { setKulalaCoreExecutable } from './format-json';
 import { isPromptResponse } from '../output/shared';
 import type { KulalaEnvironmentCatalog, KulalaResponseWrapper, RunOptions } from './types';
 
@@ -56,6 +57,7 @@ async function executablePath(): Promise<string> {
   if (!cachedExecutable) {
     throw new Error('kulala-core executable not resolved');
   }
+  setKulalaCoreExecutable(cachedExecutable);
   return cachedExecutable;
 }
 
