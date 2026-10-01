@@ -3,7 +3,7 @@
   "version": "1.2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dont-be-evil-company/kulala-cli"
+    "url": "git+https://github.com/dont-be-evil-company/kulala-cli.git"
   },
   "bin": {
     "kulala": "dist/cli.cjs"
