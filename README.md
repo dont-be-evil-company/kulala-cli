@@ -27,7 +27,7 @@ that supports the Jetbrains .http spec (with full scripting support).
 [Kulala for Neovim][kulala.nvim] •
 [Kulala Formatter (and converter)][kulala-fmt] •
 [Kulala Desktop][kulala-desktop] •
-[Kulala for Visual Studio Code][kulala.vscode] •
+[Kulala for Visual Studio Code][kulala-code] •
 [Kulala Github Action][kulala-github-action]
 
 ---
@@ -276,7 +276,7 @@ docker buildx build --push \
 [kulala.nvim]: https://github.com/dont-be-evil-company/kulala.nvim
 [kulala-fmt]: https://github.com/dont-be-evil-company/kulala-fmt
 [kulala-desktop]: https://github.com/dont-be-evil-company/kulala-desktop
-[kulala.vscode]: https://github.com/dont-be-evil-company/kulala.vscode
+[kulala-code]: https://github.com/dont-be-evil-company/kulala-code
 [kulala-github-action]: https://github.com/dont-be-evil-company/kulala-github-action
 [demo-image]: https://github.com/user-attachments/assets/a7b3b01f-0115-44dc-94d2-8abd4db6fb60
 [badge-development-status]: https://the-dont-be-evil-company.com/assets/badges/development-status.svg
