@@ -7,7 +7,7 @@ import path from 'node:path';
 import chalk from 'chalk';
 import { extractRequestNamesFromHttp, pickOne } from './lib/interactive';
 import { resolveSingleHttpFile } from './lib/runner/limit';
-import { kulalaCore } from './lib/kulala-core';
+import { formatSearchMatches, kulalaCore } from './lib/kulala-core';
 
 const program = new Command();
 
@@ -88,6 +88,27 @@ async function main(): Promise<void> {
       }
 
       await run(inputPath, options);
+    });
+
+  program
+    .command('search')
+    .description('Search persisted request history')
+    .argument('[query...]', 'search query (field filters: request.name:, response.body:, …)')
+    .option('--json', 'print raw JSON')
+    .option('--fuzzy', 'fuzzy subsequence match')
+    .option('--limit <n>', 'maximum matches', (value) => Number.parseInt(value, 10))
+    .action(async (queryParts: string[], options: { json?: boolean; fuzzy?: boolean; limit?: number }) => {
+      const query = queryParts.join(' ');
+      const result = await kulalaCore.searchHistory({
+        query,
+        fuzzy: options.fuzzy,
+        limit: options.limit,
+      });
+      if (options.json) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      console.log(formatSearchMatches(result.matches));
     });
 
   program.parse();

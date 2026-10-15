@@ -377,6 +377,72 @@ export async function convertImage(
   }
 }
 
+export type HistorySearchSnippet = {
+  field: string;
+  text: string;
+};
+
+export type HistorySearchMatch = {
+  id: number;
+  score: number;
+  label: string;
+  matchedFields: string[];
+  snippets: HistorySearchSnippet[];
+};
+
+export type HistorySearchResult = {
+  fuzzy: boolean;
+  matches: HistorySearchMatch[];
+};
+
+export async function searchHistory(
+  options: { query?: string; fuzzy?: boolean; limit?: number } = {},
+  invokeOptions: InvokeOptions = {},
+): Promise<HistorySearchResult> {
+  await executablePath();
+  const job = await invokeRaw(
+    {
+      action: 'search_responses',
+      query: options.query ?? '',
+      fuzzy: options.fuzzy,
+      limit: options.limit,
+    },
+    invokeOptions,
+  );
+  const raw = job.stdout.trim();
+  if (!raw) {
+    throw new Error(job.stderr?.trim() || 'kulala-core search_responses failed');
+  }
+  const parsed = JSON.parse(raw) as {
+    type?: string;
+    success?: boolean;
+    fuzzy?: boolean;
+    matches?: HistorySearchMatch[];
+    error?: string;
+  };
+  if (parsed.success === false) {
+    throw new Error(parsed.error || 'search failed');
+  }
+  if (parsed.type !== 'search_responses' || !Array.isArray(parsed.matches)) {
+    throw new Error(job.stderr?.trim() || 'invalid kulala-core search_responses output');
+  }
+  return { fuzzy: parsed.fuzzy === true, matches: parsed.matches };
+}
+
+export function formatSearchMatches(matches: HistorySearchMatch[]): string {
+  if (matches.length === 0) return 'No matching responses';
+  return matches
+    .map((match) => {
+      const lines = [match.label];
+      for (const snippet of match.snippets ?? []) {
+        const text = snippet.text.replace(/\s+/g, ' ').trim();
+        if (text) lines.push(`  ${snippet.field}: ${text}`);
+      }
+      return lines.join('\n');
+    })
+    .join('\n\n');
+}
+
 export const kulalaCore = {
   runHttp,
   continueHttp,
@@ -384,4 +450,5 @@ export const kulalaCore = {
   curl,
   convertImage,
   startWebSocketSession,
+  searchHistory,
 };
