@@ -1,8 +1,5 @@
-import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { downloader } from '../downloader';
+import { createDaemonClient, defaultKulalaCoreDataDir, type DaemonClient } from './daemon-client';
 import { setKulalaCoreExecutable } from './format-json';
 import { isPromptResponse } from '../output/shared';
 import type { KulalaEnvironmentCatalog, KulalaResponseWrapper, RunOptions } from './types';
@@ -49,6 +46,18 @@ type InvokeResult = {
 };
 
 let cachedExecutable: string | null = null;
+let daemon: DaemonClient | null = null;
+
+function daemonClient(): DaemonClient {
+  if (!daemon) {
+    daemon = createDaemonClient({
+      clientName: 'kulala-cli',
+      dataDir: defaultKulalaCoreDataDir,
+      executable: () => executablePath(),
+    });
+  }
+  return daemon;
+}
 
 async function executablePath(): Promise<string> {
   if (!cachedExecutable) {
@@ -61,7 +70,7 @@ async function executablePath(): Promise<string> {
   return cachedExecutable;
 }
 
-function invokeRaw(
+async function invokeRaw(
   payload: Record<string, unknown>,
   options: InvokeOptions = {},
 ): Promise<InvokeResult> {
@@ -70,56 +79,12 @@ function invokeRaw(
     return Promise.reject(new Error('kulala-core executable not resolved'));
   }
 
-  return new Promise((resolve, reject) => {
-    const child = spawn(exe, [], {
-      cwd: options.cwd,
-      env: process.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    let stdout = '';
-    let stderr = '';
-    let pending = '';
-
-    const takeLine = (line: string): void => {
-      const event = parseHttpStreamLine(line);
-      if (event) {
-        options.onHttpStream?.(event);
-        return;
-      }
-      stdout += `${line}\n`;
-    };
-
-    child.stdout.setEncoding('utf-8');
-    child.stderr.setEncoding('utf-8');
-    child.stdout.on('data', (chunk: string) => {
-      pending += chunk;
-      const lines = pending.split('\n');
-      pending = lines.pop() ?? '';
-      for (const line of lines) {
-        takeLine(line);
-      }
-    });
-    child.stderr.on('data', (chunk: string) => {
-      stderr += chunk;
-    });
-
-    child.on('error', reject);
-    child.on('close', (status) => {
-      if (pending) {
-        const event = parseHttpStreamLine(pending);
-        if (event) {
-          options.onHttpStream?.(event);
-        } else {
-          stdout += pending;
-        }
-      }
-      resolve({ stdout, stderr, status });
-    });
-
-    child.stdin.write(`${JSON.stringify(payload)}\n`);
-    child.stdin.end();
+  const result = await daemonClient().invoke(payload, {
+    cwd: options.cwd,
+    onHttpStream: options.onHttpStream,
+    track: 'active',
   });
+  return { stdout: result.stdout, stderr: result.stderr, status: result.code };
 }
 
 export function tryDecodeWrapper(stdout: string): KulalaResponseWrapper | undefined {
@@ -177,63 +142,18 @@ export async function startWebSocketSession(
   onEvent: (event: WebSocketSessionEvent) => void,
   cwd?: string,
 ): Promise<WebSocketSessionHandle> {
-  const exe = await executablePath();
-  const tmp = path.join(
-    os.tmpdir(),
-    `kulala-ws-${Date.now()}-${Math.random().toString(36).slice(2)}.json`,
-  );
-  fs.writeFileSync(tmp, JSON.stringify(connect), 'utf8');
-
-  const child = spawn(exe, ['--websocket', '-i', tmp], {
-    cwd,
-    env: process.env,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-
-  let stdoutBuf = '';
-  child.stdout.setEncoding('utf8');
-  child.stdout.on('data', (chunk: string) => {
-    stdoutBuf += chunk;
-    let nl: number;
-    while ((nl = stdoutBuf.indexOf('\n')) >= 0) {
-      const line = stdoutBuf.slice(0, nl).trim();
-      stdoutBuf = stdoutBuf.slice(nl + 1);
-      if (!line) continue;
-      try {
-        onEvent(JSON.parse(line) as WebSocketSessionEvent);
-      } catch {
-        /* ignore malformed lines */
-      }
-    }
-  });
-  child.stdin.on('error', () => {
-    /* Ignore EPIPE when the child exits early. */
-  });
-
-  const exited = new Promise<number | null>((resolve) => {
-    child.on('close', (code) => {
-      try {
-        fs.unlinkSync(tmp);
-      } catch {
-        /* ignore */
-      }
-      resolve(code);
-    });
-  });
-
+  await executablePath();
+  const handle = await daemonClient().openWebSocket(connect, { onEvent }, cwd);
+  if (!handle) {
+    throw new Error('kulala-core websocket failed to start');
+  }
   return {
-    exited,
+    exited: handle.exited,
     close() {
-      if (child.stdin.destroyed || !child.stdin.writable) return;
-      try {
-        child.stdin.write(`${JSON.stringify({ op: 'close' })}\n`);
-      } catch (err) {
-        const code = (err as NodeJS.ErrnoException).code;
-        if (code !== 'EPIPE') throw err;
-      }
+      handle.close();
     },
     kill() {
-      child.kill('SIGTERM');
+      handle.kill();
     },
   };
 }

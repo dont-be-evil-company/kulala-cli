@@ -148,7 +148,13 @@ export type RunLimit =
   | { filter: 'cursorPosition'; line: number; column: number };
 
 export type KulalaEnvironmentCatalog = {
-  $kulalaShared?: Record<string, unknown>;
+  $kulala?: {
+    defaults?: {
+      headers?: Record<string, string>;
+      curlOptions?: string[];
+    };
+    env?: Record<string, unknown>;
+  };
   environments: Record<string, Record<string, unknown>>;
 };
 

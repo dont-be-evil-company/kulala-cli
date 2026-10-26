@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+import { createDaemonClient, defaultKulalaCoreDataDir, type DaemonClient } from './daemon-client';
 
 export type FormatJsonOptions = {
   indent?: number;
@@ -8,6 +8,20 @@ export type FormatJsonOptions = {
 };
 
 let cachedExecutable: string | null = null;
+let daemon: DaemonClient | null = null;
+
+function daemonClient(): DaemonClient | null {
+  if (!cachedExecutable) return null;
+  const exe = cachedExecutable;
+  if (!daemon) {
+    daemon = createDaemonClient({
+      clientName: 'kulala-cli',
+      dataDir: defaultKulalaCoreDataDir,
+      executable: () => exe,
+    });
+  }
+  return daemon;
+}
 
 export function setKulalaCoreExecutable(exe: string): void {
   cachedExecutable = exe;
@@ -26,11 +40,10 @@ export function formatJsonSync(value: unknown, opts?: FormatJsonOptions): string
   if (opts?.text !== undefined) payload.text = opts.text;
   else payload.value = value;
 
-  const result = spawnSync(cachedExecutable, [], {
-    input: `${JSON.stringify(payload)}\n`,
-    encoding: 'utf-8',
-  });
-  if (result.status !== 0 || !result.stdout) return undefined;
+  const daemon = daemonClient();
+  if (!daemon) return undefined;
+  const result = daemon.invokeSync(payload);
+  if (result.code !== 0 || !result.stdout) return undefined;
 
   try {
     const parsed = JSON.parse(result.stdout) as { success?: boolean; content?: string };
