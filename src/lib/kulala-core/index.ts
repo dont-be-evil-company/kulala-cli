@@ -70,6 +70,16 @@ async function executablePath(): Promise<string> {
   return cachedExecutable;
 }
 
+/** Download kulala-core, prompting for a license token, before any request spinner. */
+export async function ensureReady(): Promise<void> {
+  await executablePath();
+}
+
+/** Let the process exit. The kulala-core daemon stays up for the next command. */
+export function release(): void {
+  daemon?.release();
+}
+
 async function invokeRaw(
   payload: Record<string, unknown>,
   options: InvokeOptions = {},
@@ -364,6 +374,8 @@ export function formatSearchMatches(matches: HistorySearchMatch[]): string {
 }
 
 export const kulalaCore = {
+  ensureReady,
+  release,
   runHttp,
   continueHttp,
   environments,

@@ -17,6 +17,14 @@ program
   .version(pkg.version);
 
 async function main(): Promise<void> {
+  try {
+    await dispatch();
+  } finally {
+    kulalaCore.release();
+  }
+}
+
+async function dispatch(): Promise<void> {
   if (process.argv[2] === 'curl') {
     await curl(process.argv.slice(3));
     return;
@@ -97,21 +105,26 @@ async function main(): Promise<void> {
     .option('--json', 'print raw JSON')
     .option('--fuzzy', 'fuzzy subsequence match')
     .option('--limit <n>', 'maximum matches', (value) => Number.parseInt(value, 10))
-    .action(async (queryParts: string[], options: { json?: boolean; fuzzy?: boolean; limit?: number }) => {
-      const query = queryParts.join(' ');
-      const result = await kulalaCore.searchHistory({
-        query,
-        fuzzy: options.fuzzy,
-        limit: options.limit,
-      });
-      if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
-        return;
-      }
-      console.log(formatSearchMatches(result.matches));
-    });
+    .action(
+      async (
+        queryParts: string[],
+        options: { json?: boolean; fuzzy?: boolean; limit?: number },
+      ) => {
+        const query = queryParts.join(' ');
+        const result = await kulalaCore.searchHistory({
+          query,
+          fuzzy: options.fuzzy,
+          limit: options.limit,
+        });
+        if (options.json) {
+          console.log(JSON.stringify(result, null, 2));
+          return;
+        }
+        console.log(formatSearchMatches(result.matches));
+      },
+    );
 
-  program.parse();
+  await program.parseAsync();
 }
 
 main().catch((error: unknown) => {

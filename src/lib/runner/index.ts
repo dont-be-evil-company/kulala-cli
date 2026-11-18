@@ -313,6 +313,8 @@ export async function run(inputPath: string, options: RunCommandOptions): Promis
 
   const halt = options.halt ?? false;
 
+  await kulalaCore.ensureReady();
+
   for (const file of files) {
     const result = await runFile(file, options.env, limit, halt, output);
     results.push(result);

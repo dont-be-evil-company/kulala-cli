@@ -60,6 +60,8 @@ export async function curl(argv: string[], options: CurlCommandOptions = {}): Pr
     process.exit(1);
   }
 
+  await kulalaCore.ensureReady();
+
   const response = isInteractiveTerminal()
     ? await withSpinner('Running request', () => kulalaCore.curl({ argv: curlArgv }))
     : await kulalaCore.curl({ argv: curlArgv });
